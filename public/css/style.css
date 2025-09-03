@@ -1,0 +1,110 @@
+/* === General Reset === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* === Body === */
+  body {
+    background-color: #1b1b1b;
+    color: #139555;
+    font-family: 'Share Tech Mono', monospace;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+  
+  /* === Container === */
+  .container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* === Rabbit Wrapper === */
+  .rabbit-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .rabbit-img {
+    max-width: 50%;
+    max-height: 80vh;
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 1.5s ease;
+  }
+  
+  /* Fade-in on load */
+  .rabbit-img.fade-in {
+    opacity: 1;
+  }
+  
+  /* Fade-out on hover */
+  .rabbit-img.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+  
+  /* === Menu === */
+  .menu {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    display: grid;
+    grid-template-columns: repeat(2, 180px);
+    grid-gap: 20px;
+    opacity: 0;
+    transition: opacity 2.5s ease, transform 2.5s ease;
+  }
+  
+  .menu.fade-in-menu {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  
+  .menu.hidden {
+    display: none;
+  }
+  
+  /* === Buttons === */
+  .menu button {
+    background-color: transparent;
+    border: 2px solid #139555;
+    color: #139555;
+    font-size: 1.2rem;
+    padding: 15px 30px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  
+  /* Hover effect */
+  .menu button:hover {
+    background-color: #139555;
+    color: #1b1b1b;
+    box-shadow: 0 0 15px #139555;
+    transform: scale(1.05);
+  }
+  
+  /* === Responsive === */
+  @media (max-width: 768px) {
+    .menu {
+      grid-template-columns: 1fr;
+      grid-gap: 15px;
+    }
+  
+    .rabbit-img {
+      max-width: 70%;
+    }
+  }
+  

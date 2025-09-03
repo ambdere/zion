@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zion</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32.png">
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <!-- Rabbit Image -->
+    <div class="rabbit-wrapper">
+      <img src="/images/rabbit.png" alt="Follow the White Rabbit" class="rabbit-img" />
+    </div>
+
+    <!-- Hidden Menu -->
+    <div class="menu hidden">
+      <button>Games</button>
+      <button>Books</button>
+      <button>Series</button>
+      <button>Movies</button>
+      <button>To-Do</button>
+      <button>To-Buy</button>
+    </div>
+  </div>
+
+  <script>
+    const rabbit = document.querySelector('.rabbit-img');
+    const menu = document.querySelector('.menu');
+    const container = document.querySelector('.container');
+
+    // Fade-in rabbit on page load
+    window.addEventListener('load', () => {
+      rabbit.classList.add('fade-in');
+    });
+
+    // Show menu on rabbit hover
+    rabbit.addEventListener('mouseenter', () => {
+      rabbit.classList.add('fade-out');
+      menu.classList.remove('hidden');
+      menu.classList.add('fade-in-menu');
+    });
+
+    // Hide menu and show rabbit again when mouse leaves central area
+    container.addEventListener('mousemove', (e) => {
+      const rect = menu.getBoundingClientRect();
+      const insideMenu =
+        e.clientX >= rect.left &&
+        e.clientX <= rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom;
+
+      const rabbitRect = rabbit.getBoundingClientRect();
+      const insideRabbit =
+        e.clientX >= rabbitRect.left &&
+        e.clientX <= rabbitRect.right &&
+        e.clientY >= rabbitRect.top &&
+        e.clientY <= rabbitRect.bottom;
+
+      if (!insideMenu && !insideRabbit && !menu.classList.contains('hidden')) {
+        menu.classList.remove('fade-in-menu');
+        menu.classList.add('hidden');
+        rabbit.classList.remove('fade-out');
+        rabbit.classList.add('fade-in');
+      }
+    });
+  </script>
+</body>
+</html>
