@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zion | Books</title>
+  <link rel="stylesheet" href="/css/books.css" />
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="page-container">
+    <header>
+      <!-- Link alla homepage -->
+      <div class="home-link">
+        <a href="/" class="matrix-btn">&larr; Home</a>
+      </div>
+  
+      <h1>Books Library</h1>
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="completed">Completed</button>
+        <button class="filter-btn" data-filter="in_progress">In Progress</button>
+        <button class="filter-btn" data-filter="never_read">To Read</button>
+      </div>
+
+      <!-- Search input -->
+      <input type="text" id="search-input" placeholder="Search title or author..." />
+    </header>
+
+    <main>
+      <div id="books-grid" class="books-grid"></div>
+    </main>
+  </div>
+
+  <!-- Popup -->
+  <div id="book-popup" class="popup hidden">
+    <div class="popup-content">
+      <span id="close-popup" class="close-btn">&times;</span>
+      <h2 id="popup-title"></h2>
+      <p id="popup-author"></p>
+      <div id="popup-sessions"></div>
+    </div>
+  </div>
+
+  <script>
+    const booksGrid = document.getElementById("books-grid");
+    const popup = document.getElementById("book-popup");
+    const closePopup = document.getElementById("close-popup");
+
+    let allBooks = [];
+
+    async function fetchBooks() {
+      const res = await fetch("/books/api");
+      allBooks = await res.json();
+      renderBooks(allBooks);
+    }
+
+    function renderBooks(books) {
+      // Step 1: fade-out di tutte le card attuali
+      const currentCards = Array.from(booksGrid.children);
+      currentCards.forEach(card => card.classList.add("fade-out"));
+
+      // Step 2: dopo il fade-out, rimuovi e aggiungi le nuove card
+      setTimeout(() => {
+        booksGrid.innerHTML = "";
+
+        books.forEach(book => {
+          const card = document.createElement("div");
+          card.classList.add("book-card", "fade-out");
+          card.dataset.status = book.status;
+
+          card.innerHTML = `
+            <div class="status-indicator ${book.status}"></div>
+            <img src="/covers/books/${book.id}.jpg" alt="${book.title}" />
+            <h3>${book.title}</h3>
+            <p class="author">${book.author}</p>
+          `;
+
+          card.addEventListener("click", () => openPopup(book));
+          booksGrid.appendChild(card);
+
+          // Step 3: fade-in della singola card
+          setTimeout(() => {
+            card.classList.remove("fade-out");
+            card.classList.add("fade-in");
+          }, 50);
+        });
+      }, 300);
+    }
+
+    function openPopup(book) {
+      document.getElementById("popup-title").textContent = book.title;
+      document.getElementById("popup-author").textContent = `Author: ${book.author}`;
+      document.getElementById("popup-sessions").innerHTML = `<em>Reading sessions coming soon</em>`;
+      popup.classList.remove("hidden");
+    }
+
+    closePopup.addEventListener("click", () => popup.classList.add("hidden"));
+    window.addEventListener("click", (e) => {
+      if (e.target === popup) popup.classList.add("hidden");
+    });
+
+    // Filtri
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        const filter = btn.dataset.filter;
+        const filteredBooks = filter === "all"
+          ? allBooks
+          : allBooks.filter(book => book.status === filter);
+
+        renderBooks(filteredBooks);
+      });
+    });
+
+    // Ricerca combinata con i filtri
+    const searchInput = document.getElementById("search-input");
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.toLowerCase();
+      const activeFilterBtn = document.querySelector(".filter-btn.active");
+      const filter = activeFilterBtn ? activeFilterBtn.dataset.filter : "all";
+
+      const filteredBooks = allBooks.filter(book => {
+        const matchesFilter = filter === "all" || book.status === filter;
+        const matchesSearch =
+          book.title.toLowerCase().includes(query) ||
+          book.author.toLowerCase().includes(query);
+
+        return matchesFilter && matchesSearch;
+      });
+
+      renderBooks(filteredBooks);
+    });
+
+    fetchBooks();
+  </script>  
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zion | Games</title>
+  <link rel="stylesheet" href="/css/games.css" />
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="page-container">
+    <header>
+    <!-- Link alla homepage -->
+  <div class="home-link">
+    <a href="/" class="matrix-btn">&larr; Home</a>
+  </div>
+  
+      <h1>Games Library</h1>
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="completed">Completed</button>
+        <button class="filter-btn" data-filter="in_progress">In Progress</button>
+        <button class="filter-btn" data-filter="never_played">To Play</button>
+      </div>
+
+      <!-- Search input -->
+    <input type="text" id="search-input" placeholder="Search title or console..." />
+</div>
+    </header>
+
+    <main>
+      <div id="games-grid" class="games-grid"></div>
+    </main>
+  </div>
+
+  <!-- Popup -->
+  <div id="game-popup" class="popup hidden">
+    <div class="popup-content">
+      <span id="close-popup" class="close-btn">&times;</span>
+      <h2 id="popup-title"></h2>
+      <p id="popup-console"></p>
+      <div id="popup-sessions"></div>
+    </div>
+  </div>
+
+  <script>
+    const gamesGrid = document.getElementById("games-grid");
+const popup = document.getElementById("game-popup");
+const closePopup = document.getElementById("close-popup");
+
+let allGames = [];
+
+async function fetchGames() {
+  const res = await fetch("/games/api");
+  allGames = await res.json();
+  renderGames(allGames);
+}
+
+function renderGames(games) {
+  // Step 1: fade-out di tutte le card attuali
+  const currentCards = Array.from(gamesGrid.children);
+  currentCards.forEach(card => card.classList.add("fade-out"));
+
+  // Step 2: dopo il fade-out, rimuovi e aggiungi le nuove card
+  setTimeout(() => {
+    gamesGrid.innerHTML = "";
+
+    games.forEach(game => {
+      const card = document.createElement("div");
+      card.classList.add("game-card", "fade-out"); // parte da invisibile
+      card.dataset.status = game.status;
+
+      card.innerHTML = `
+        <div class="status-indicator ${game.status}"></div>
+        <img src="/covers/games/${game.id}.jpg" alt="${game.titolo}" />
+        <h3>${game.titolo}</h3>
+      `;
+
+      card.addEventListener("click", () => openPopup(game));
+      gamesGrid.appendChild(card);
+
+      // Step 3: fade-in della singola card
+      setTimeout(() => {
+        card.classList.remove("fade-out");
+        card.classList.add("fade-in");
+      }, 50); // piccolo delay per attivare transizione
+    });
+  }, 300); // durata fade-out delle card esistenti
+}
+
+function openPopup(game) {
+  document.getElementById("popup-title").textContent = game.titolo;
+  document.getElementById("popup-console").textContent = `Console: ${game.console}`;
+  document.getElementById("popup-sessions").innerHTML = `<em>Sessions list coming soon</em>`;
+  popup.classList.remove("hidden");
+}
+
+closePopup.addEventListener("click", () => popup.classList.add("hidden"));
+window.addEventListener("click", (e) => {
+  if (e.target === popup) popup.classList.add("hidden");
+});
+
+// Filtri
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    const filter = btn.dataset.filter;
+    const filteredGames = filter === "all"
+      ? allGames
+      : allGames.filter(game => game.status === filter);
+
+    renderGames(filteredGames);
+  });
+});
+
+const searchInput = document.getElementById("search-input");
+
+searchInput.addEventListener("input", () => {
+  const query = searchInput.value.toLowerCase();
+
+  // Applica il filtro combinato con quello attivo
+  const activeFilterBtn = document.querySelector(".filter-btn.active");
+  const filter = activeFilterBtn ? activeFilterBtn.dataset.filter : "all";
+
+  const filteredGames = allGames.filter(game => {
+    const matchesFilter = filter === "all" || game.status === filter;
+    const matchesSearch =
+      game.titolo.toLowerCase().includes(query) ||
+      game.console.toLowerCase().includes(query);
+
+    return matchesFilter && matchesSearch;
+  });
+
+  renderGames(filteredGames);
+});
+
+fetchGames();
+  </script>  
+</body>
+</html>
