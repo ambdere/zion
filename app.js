@@ -36,7 +36,9 @@ app.get('/', (req, res) => {
 
 const gamesRoutes = require('./routes/games');
 const booksRoutes = require('./routes/books');
+const animeRoutes = require('./routes/anime');
 app.use('/games', gamesRoutes);
 app.use('/books', booksRoutes);
+app.use('/anime', animeRoutes);
 
 module.exports = app;

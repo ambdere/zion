@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zion | Anime</title>
+  <link rel="stylesheet" href="/css/anime.css" />
+  <link rel="icon" href="/images/favicon.ico" type="image/x-icon" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="page-container">
+    <header>
+      <div class="home-link">
+        <a href="/" class="matrix-btn">&larr; Home</a>
+      </div>
+
+      <h1>Anime Library</h1>
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="completed">Completed</button>
+        <button class="filter-btn" data-filter="in_progress">In Progress</button>
+        <button class="filter-btn" data-filter="never_watched">To Watch</button>
+      </div>
+
+      <input type="text" id="search-input" placeholder="Search anime by title..." />
+    </header>
+
+    <main>
+      <div id="anime-grid" class="anime-grid"></div>
+    </main>
+  </div>
+
+  <!-- Popup Episodi -->
+  <div id="anime-popup" class="popup hidden">
+    <div class="popup-content">
+      <span id="close-popup" class="close-btn" title="Chiudi">&times;</span>
+      <h2 id="popup-title"></h2>
+
+      <!-- Pulsanti saghe -->
+      <div id="saga-buttons" class="saga-buttons"></div>
+
+      <!-- Lista episodi -->
+      <div id="episodes-list" class="episodes-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const animeGrid = document.getElementById("anime-grid");
+    const popup = document.getElementById("anime-popup");
+    const closePopup = document.getElementById("close-popup");
+
+    let allAnime = [];
+
+    async function fetchAnime() {
+      const res = await fetch("/anime/api");
+      allAnime = await res.json();
+      renderAnime(allAnime);
+    }
+
+    function renderAnime(animeList) {
+      const currentCards = Array.from(animeGrid.children);
+      currentCards.forEach(card => card.classList.add("fade-out"));
+
+      setTimeout(() => {
+        animeGrid.innerHTML = "";
+
+        animeList.forEach(anime => {
+          const card = document.createElement("div");
+          card.classList.add("anime-card", "fade-out");
+          card.dataset.status = anime.status;
+
+          card.innerHTML = `
+            <div class="status-indicator ${anime.status}"></div>
+            <img src="/covers/anime/${anime.id}.jpg" alt="${anime.title}" onerror="this.src='/images/cover-placeholder.jpg'"/>
+            <h3 class="anime-title">${anime.title}</h3>
+          `;
+
+          card.addEventListener("click", () => openPopup(anime.id, anime.title));
+          animeGrid.appendChild(card);
+
+          setTimeout(() => {
+            card.classList.remove("fade-out");
+            card.classList.add("fade-in");
+          }, 50);
+        });
+      }, 300);
+    }
+
+    async function openPopup(animeId, animeTitle) {
+      document.getElementById("popup-title").textContent = animeTitle;
+
+      const res = await fetch(`/anime/${animeId}/episodes`);
+      const data = await res.json();
+
+      const saghe = [...new Set(data.map(ep => ep.saga || ''))];
+      const sagaButtons = document.getElementById("saga-buttons");
+      sagaButtons.innerHTML = "";
+
+      const realSaghe = saghe.filter(s => s !== '');
+      if (realSaghe.length > 0) {
+        realSaghe.forEach(saga => {
+          const btn = document.createElement("button");
+          btn.textContent = saga;
+          btn.classList.add("saga-btn");
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".saga-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderEpisodes(data.filter(ep => ep.saga === saga));
+            // reset scroll top al cambio saga
+            document.getElementById("episodes-list").scrollTop = 0;
+          });
+          sagaButtons.appendChild(btn);
+        });
+      }
+
+      if (realSaghe.length > 0) {
+        const first = realSaghe[0];
+        document.querySelectorAll(".saga-btn").forEach(b => {
+          if (b.textContent === first) b.classList.add("active");
+        });
+        renderEpisodes(data.filter(ep => ep.saga === first));
+      } else {
+        renderEpisodes(data);
+      }
+
+      // reset scroll top all'apertura del popup
+      document.getElementById("episodes-list").scrollTop = 0;
+      popup.classList.remove("hidden");
+    }
+
+    function renderEpisodes(episodes) {
+      const container = document.getElementById("episodes-list");
+      container.innerHTML = "";
+      episodes.forEach(ep => {
+        const div = document.createElement("div");
+        div.classList.add("episode-item");
+        const numStr = String(ep.episode_number).padStart(3, "0");
+        div.innerHTML = `
+          <span class="ep-num">#${numStr}</span>
+          <div class="ep-main">
+            <div class="ep-title"><strong>${escapeHtml(ep.title_it)}</strong></div>
+            <div class="ep-subtitles">
+              ${ep.title_jp_kanji ? `<div class="kanji">${escapeHtml(ep.title_jp_kanji)}</div>` : ''}
+              ${ep.title_jp_romaji ? `<div class="romaji">${escapeHtml(ep.title_jp_romaji)}</div>` : ''}
+              ${ep.title_literal ? `<div class="literal">"${escapeHtml(ep.title_literal)}"</div>` : ''}
+            </div>
+          </div>
+          <span class="ep-watched ${ep.watched ? 'completed' : 'never_watched'}" title="${ep.watched ? 'Visto' : 'Non visto'}"></span>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    closePopup.addEventListener("click", () => popup.classList.add("hidden"));
+    window.addEventListener("click", (e) => {
+      if (e.target === popup) popup.classList.add("hidden");
+    });
+
+    // Filtri
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        const filter = btn.dataset.filter;
+        const filtered = filter === "all"
+          ? allAnime
+          : allAnime.filter(anime => anime.status === filter);
+
+        renderAnime(filtered);
+      });
+    });
+
+    // Ricerca
+    const searchInput = document.getElementById("search-input");
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.toLowerCase();
+      const activeFilterBtn = document.querySelector(".filter-btn.active");
+      const filter = activeFilterBtn ? activeFilterBtn.dataset.filter : "all";
+
+      const filtered = allAnime.filter(anime => {
+        const matchesFilter = filter === "all" || anime.status === filter;
+        const matchesSearch = anime.title.toLowerCase().includes(query);
+        return matchesFilter && matchesSearch;
+      });
+
+      renderAnime(filtered);
+    });
+
+    function escapeHtml(unsafe) {
+      if (!unsafe) return '';
+      return unsafe
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    fetchAnime();
+  </script>
+</body>
+</html>
